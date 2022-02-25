@@ -1,0 +1,147 @@
+#!/bin/sh -e
+#L:  This software is free to use and modify.
+#L:  
+#l:  Bug reports, feature requests to gemini|https://harkadev.com/oss
+#l:  Copyright (c) 2022 Harkaitz Agirre, harkaitz.aguirre@gmail.com
+#L:
+#L:  Permission is hereby granted, free of charge, to any person obtaining
+#L:  a copy of this software and associated documentation files (the
+#L:  "Software"), to deal in the Software without restriction, including
+#L:  without limitation the rights to use, copy, modify, merge, publish,
+#L:  distribute, sublicense, and/or sell copies of the Software, and to
+#L:  permit persons to whom the Software is furnished to do so, subject to
+#L:  the following conditions:
+#L:
+#L:  The above copyright notice and this permission notice shall be
+#L:  included in all copies or substantial portions of the Software.
+#L:
+#L:  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+#L:  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+#L:  MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+#L:  NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+#L:  LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+#L:  OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+#L:  WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+#r:
+#h: Usage: $0 PAGE...
+#h:
+#h: This program helps writting and accessing notes in a UNIX machine.
+#h:
+#h:     -v : Show configuration.   -V : Print version.
+#h:
+#h:     -l       : List note pages.
+#h:     -e NAME  : Edit page.
+#h:     -s       : Open shell in note directory.
+#h:     -r REGEX : Search in notes.
+boy() {
+    local OPTIND optopt= opt_u=
+    while getopts "vVle:sr:" optopt;do
+        case $optopt in
+            v)  boy_show_variables;         return 0;;
+            V)  echo "0.1";                 return 0;;
+            l)  boy_list_pages;             return 0;;
+            e)  boy_edit_page "${OPTARG}";  return 0;;
+            s)  boy_open_shell;             return 0;;
+            r)  boy_grep_pages "${OPTARG}"; return 0;;
+            \?) return 1;;
+        esac
+    done
+    shift $(( $OPTIND - 1 ))
+    boy_open_page "$@"
+}
+boy_show_variables() {
+    printf '%-30s : %s\n' BOYDIR    "${BOYDIR}"
+    printf '%-30s : %s\n' EDITOR    "${EDITOR}"
+    printf '%-30s : %s\n' SHELL     "${SHELL}"
+    printf '%-30s : %s\n' MDCAT     "${MDCAT}"
+    printf '%-30s : %s\n' COLS      "${COLS}"
+}
+boy_calc_variables() {
+    BOYDIR="${BOYDIR:-${HOME}/notes}"
+    EDITOR="${EDITOR:-vi}"
+    SHELL="${SHELL:-/bin/sh}"
+    MDCAT="${MDCAT:-mdcat}"
+    COLS="${COLS:-`tput cols`}"
+}
+## -----------------------------------------------------------------------------
+boy_list_pages() {
+    local d="${BOYDIR}"
+    if test -d "${d}";then
+        local len="`echo "@${d}" | wc -c`"
+        find "${d}" -type f -iregex '.*\.md$' | cut -b "${len}-" | cut -d '.' -f 1
+    fi
+}
+boy_edit_page() {
+    local f1="$1" f2="${BOYDIR}/${1}.md" yn=
+    if test ! -n "${1}";then
+        boy_error "Please specify a valid manual page name."
+        return 1
+    elif test -f "${f1}";then
+        boy_editor "${f1}"
+    elif test -f "${f2}";then
+        boy_editor "${f2}"
+    else
+        echo    "${SCRNAME}: File ${f2} does not exist." >&2
+        echo -n "${SCRNAME}: Create y/N ? " >&2; read yn
+        if test ! @"${yn}" = @"y";then return 1;fi
+        boy_editor "${f2}"
+    fi
+}
+boy_open_shell() {
+    local pwd="`pwd`" dir="${BOYDIR}"
+    if test ! -d "${dir}";then
+        boy_error "Directory ${BOYDIR} does not exist."
+        return 1
+    fi
+    cd "${dir}"
+    ${SHELL} -i
+    cd "${pwd}"
+}
+boy_open_page() {
+    local f1="$1" f2="${BOYDIR}/${1}.md" yn=
+    if test ! -n "${1}";then
+        boy_error "Please specify a valid manual page name."
+        return 1
+    elif test -f "${f1}";then
+        boy_reader "${f1}"
+    elif test -f "${f2}";then
+        boy_reader "${f2}"
+    else
+        boy_error "File ${f2} does not exist."
+        return 1
+    fi
+}
+boy_editor() {
+    ${EDITOR} "$@"
+}
+boy_reader() {
+    ${MDCAT} "$1" | less -r
+}
+boy_grep_pages() {
+    local d="${BOYDIR}"
+    if test -d "${d}";then
+        local len="`echo "@${d}" | wc -c`"
+        find "${d}" -type f -iregex '.*\.md$' | while read f;do
+            local t="`echo "${f}" | cut -b "${len}-" | cut -d '.' -f 1`"
+            local t="`printf '%-20s' "${t}"`"
+            printf '%s : ---- \n' "${t}" | grep "${1}" || true
+            grep "${1}" "${f}" | sed "s|^|${t} : |" | cut -c "1-${COLS}" || true
+        done
+    fi
+}
+## -----------------------------------------------------------------------------
+boy_error() { echo "${SCRNAME}: error: $*" >&2; }
+SCRNAME="`basename "$0"`"
+boy_calc_variables
+if test @"${SCRNAME}" = @"boy";then
+    case "$1" in
+        ''|-h|--help)
+            sed -n 's/^ *#h: \{0,1\}//p' "$0" | sed "s|\\\$0|`basename $0`|g"
+            echo ""
+            sed -n 's/^ *#l: \{0,2\}//p' "$0"
+            ;;
+        *)
+            boy "$@"
+            ;;
+    esac
+fi
