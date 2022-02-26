@@ -1,5 +1,6 @@
 #!/bin/sh -e
-#L:  This software is free to use and modify.
+#L:
+#L:  MIT License
 #L:  
 #l:  Bug reports, feature requests to gemini|https://harkadev.com/oss
 #l:  Copyright (c) 2022 Harkaitz Agirre, harkaitz.aguirre@gmail.com
