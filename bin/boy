@@ -34,16 +34,18 @@
 #h:     -e NAME  : Edit page.
 #h:     -s       : Open shell in note directory.
 #h:     -r REGEX : Search in notes.
+#h:     -f NAME  : Get filename.
 boy() {
     local OPTIND optopt= opt_u=
-    while getopts "vVle:sr:" optopt;do
+    while getopts "vVle:sr:f:" optopt;do
         case $optopt in
-            v)  boy_show_variables;         return 0;;
-            V)  echo "0.1";                 return 0;;
-            l)  boy_list_pages;             return 0;;
-            e)  boy_edit_page "${OPTARG}";  return 0;;
-            s)  boy_open_shell;             return 0;;
-            r)  boy_grep_pages "${OPTARG}"; return 0;;
+            v)  boy_show_variables;          return 0;;
+            V)  echo "0.1";                  return 0;;
+            l)  boy_list_pages;              return 0;;
+            e)  boy_edit_page "${OPTARG}";   return 0;;
+            s)  boy_open_shell;              return 0;;
+            r)  boy_grep_pages "${OPTARG}";  return 0;;
+            f)  boy_search_file "${OPTARG}"; return 0;;
             \?) return 1;;
         esac
     done
@@ -69,11 +71,27 @@ boy_list_pages() {
     local d="${BOYDIR}"
     if test -d "${d}";then
         local len="`echo "@${d}" | wc -c`"
-        find "${d}" -type f -iregex '.*\.md$' | cut -b "${len}-" | cut -d '.' -f 1
+        find "${d}" -type f -iregex '.*\.md$' -or -iregex '.*\.org' | cut -b "${len}-" | cut -d '.' -f 1
+    fi
+}
+boy_search_file() {
+    local f1="$1" f2="${BOYDIR}/${1}.md" f3="${BOYDIR}/${1}.org" yn=
+    if test ! -n "${1}";then
+        boy_error "Please specify a valid manual page name."
+        return 1
+    elif test -f "${f1}";then
+        echo "${f1}"
+    elif test -f "${f2}";then
+        echo "${f2}"
+    elif test -f "${f3}";then
+        echo "${f3}"
+    else
+        boy_error "Not found."
+        return 1
     fi
 }
 boy_edit_page() {
-    local f1="$1" f2="${BOYDIR}/${1}.md" yn=
+    local f1="$1" f2="${BOYDIR}/${1}.md" f3="${BOYDIR}/${1}.org" yn=
     if test ! -n "${1}";then
         boy_error "Please specify a valid manual page name."
         return 1
@@ -81,6 +99,8 @@ boy_edit_page() {
         boy_editor "${f1}"
     elif test -f "${f2}";then
         boy_editor "${f2}"
+    elif test -f "${f3}";then
+        bot_editor "${f3}"
     else
         echo    "${SCRNAME}: File ${f2} does not exist." >&2
         echo -n "${SCRNAME}: Create y/N ? " >&2; read yn
@@ -99,7 +119,7 @@ boy_open_shell() {
     cd "${pwd}"
 }
 boy_open_page() {
-    local f1="$1" f2="${BOYDIR}/${1}.md" yn=
+    local f1="$1" f2="${BOYDIR}/${1}.md" f3="${BOYDIR}/${1}.org" yn=
     if test ! -n "${1}";then
         boy_error "Please specify a valid manual page name."
         return 1
@@ -107,6 +127,8 @@ boy_open_page() {
         boy_reader "${f1}"
     elif test -f "${f2}";then
         boy_reader "${f2}"
+    elif test -f "${f3}";then
+        boy_editor "${f3}"
     else
         boy_error "File ${f2} does not exist."
         return 1
