@@ -23,7 +23,7 @@
 #L:  LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 #L:  OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 #L:  WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-#r:
+##:
 #h: Usage: $0 PAGE...
 #h:
 #h: This program helps writting and accessing notes in a UNIX machine.
@@ -35,6 +35,7 @@
 #h:     -s       : Open shell in note directory.
 #h:     -r REGEX : Search in notes.
 #h:     -f NAME  : Get filename.
+##:
 boy() {
     local OPTIND optopt= opt_u=
     while getopts "vVle:sr:f:" optopt;do
