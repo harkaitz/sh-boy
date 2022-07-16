@@ -1,15 +1,29 @@
 DESTDIR     =
 PREFIX      =/usr/local
-SCRIPTS_BIN =$(shell test ! -d bin || find bin -executable -type f)
-MANPAGES_1  =$(shell test ! -d man || find man -iregex '.*\.1$$')
+
 all:
 clean:
 install:
-    ifneq ($(SCRIPTS_BIN),)
-	mkdir -p $(DESTDIR)$(PREFIX)/bin
-	cp $(SCRIPTS_BIN) $(DESTDIR)$(PREFIX)/bin
-    endif
-    ifneq ($(MANPAGES_1),)
+## -- manpages --
+ifneq ($(PREFIX),)
+MAN_1=./man/boy.1 
+install: install-man1
+install-man1: $(MAN_1)
 	mkdir -p $(DESTDIR)$(PREFIX)/share/man/man1
-	cp $(MANPAGES_1) $(DESTDIR)$(PREFIX)/share/man/man1
-    endif
+	cp $(MAN_1) $(DESTDIR)$(PREFIX)/share/man/man1
+endif
+## -- manpages --
+## -- license --
+ifneq ($(PREFIX),)
+install: install-license
+install-license: LICENSE
+	mkdir -p $(DESTDIR)$(PREFIX)/share/doc/sh-boy
+	cp LICENSE $(DESTDIR)$(PREFIX)/share/doc/sh-boy
+endif
+## -- license --
+## -- install-sh --
+install: install-sh
+install-sh:
+	mkdir -p $(DESTDIR)$(PREFIX)/bin
+	cp bin/boy  $(DESTDIR)$(PREFIX)/bin
+## -- install-sh --
